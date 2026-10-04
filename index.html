@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NexusFlow - Visual Workflow Automation Studio</title>
+  <!-- Google Fonts & Tailwind CSS CDN -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              accent: '#6366f1'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased overflow-hidden select-none h-screen flex flex-col font-sans">
+
+  <!-- Top Navigation Header -->
+  <header class="h-14 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md px-4 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
+        <i class="ph-bold ph-git-fork text-white text-lg"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-base tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">NexusFlow</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-medium">STUDIO v2.4</span>
+        </div>
+      </div>
+      <div class="h-4 w-px bg-slate-800 mx-1"></div>
+      
+      <!-- Current Workflow Name / Switcher -->
+      <div class="flex items-center gap-2">
+        <button id="btn-wf-selector" class="flex items-center gap-2 px-2.5 py-1 rounded-md hover:bg-slate-800 text-sm font-semibold text-slate-200 transition">
+          <span id="current-wf-name">Lead Ingestion & Qualification Pipeline</span>
+          <i class="ph-bold ph-caret-down text-xs text-slate-400"></i>
+        </button>
+        <span id="badge-wf-status" class="flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          Active
+        </span>
+      </div>
+    </div>
+
+    <!-- Center Control Bar -->
+    <div class="flex items-center gap-2 bg-slate-950/80 border border-slate-800/90 rounded-lg p-1">
+      <button id="btn-tab-editor" class="px-3 py-1 rounded-md text-xs font-semibold bg-slate-800 text-white shadow-sm flex items-center gap-1.5 transition">
+        <i class="ph-bold ph-graph"></i> Builder
+      </button>
+      <button id="btn-tab-history" class="px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-850 flex items-center gap-1.5 transition">
+        <i class="ph-bold ph-clock-counter-clockwise"></i> History & Logs
+      </button>
+      <button id="btn-tab-templates" class="px-3 py-1 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-850 flex items-center gap-1.5 transition">
+        <i class="ph-bold ph-squares-four"></i> Templates
+      </button>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center gap-2">
+      <!-- AI Workflow Generator Button -->
+      <button id="btn-open-ai-modal" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-500/20 transition transform active:scale-95">
+        <i class="ph-fill ph-sparkle text-amber-300"></i> AI Generator
+      </button>
+
+      <!-- Webhook Trigger Info -->
+      <button id="btn-webhook-info" class="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700/50 flex items-center gap-1.5 transition" title="View Inbound Webhook URL">
+        <i class="ph-bold ph-link text-indigo-400"></i> Webhook
+      </button>
+
+      <!-- Auto Layout -->
+      <button id="btn-auto-layout" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-xs border border-slate-700/50 transition" title="Auto Align DAG Nodes">
+        <i class="ph-bold ph-tree-structure text-sm"></i>
+      </button>
+
+      <!-- Save Workflow -->
+      <button id="btn-save-wf" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 flex items-center gap-1.5 transition">
+        <i class="ph-bold ph-floppy-disk"></i> Save
+      </button>
+
+      <!-- Run / Test Workflow -->
+      <button id="btn-run-wf" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 transition transform active:scale-95">
+        <i class="ph-fill ph-play"></i> Execute Flow
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Work Area -->
+  <div class="flex-1 flex relative overflow-hidden">
+
+    <!-- Left Sidebar / Node Palette -->
+    <aside id="sidebar-palette" class="w-64 border-r border-slate-800/80 bg-slate-900/60 backdrop-blur flex flex-col z-20 shrink-0 transition-all duration-300">
+      <div class="p-3 border-b border-slate-800/80 flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+          <i class="ph-bold ph-circles-three-plus text-indigo-400"></i> Node Palette
+        </span>
+        <button id="btn-collapse-palette" class="text-slate-500 hover:text-slate-300">
+          <i class="ph-bold ph-caret-left"></i>
+        </button>
+      </div>
+
+      <!-- Search Nodes -->
+      <div class="p-2.5">
+        <div class="relative">
+          <i class="ph-bold ph-magnifying-glass absolute left-2.5 top-2.5 text-xs text-slate-500"></i>
+          <input type="text" id="palette-search" placeholder="Search triggers & actions..." class="w-full bg-slate-950/80 border border-slate-800 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+        </div>
+      </div>
+
+      <!-- Categorized Node List -->
+      <div class="flex-1 overflow-y-auto px-2 space-y-4 text-xs" id="palette-categories">
+        
+        <!-- TRIGGERS -->
+        <div>
+          <div class="px-2 py-1 text-[11px] font-bold text-amber-400/90 uppercase tracking-wider flex items-center gap-1">
+            <i class="ph-fill ph-lightning"></i> Triggers
+          </div>
+          <div class="space-y-1 mt-1">
+            <div class="palette-item" draggable="true" data-type="manual_trigger">
+              <div class="w-6 h-6 rounded bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-hand-tap"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">Manual Trigger</div>
+                <div class="text-[10px] text-slate-400">Runs on user click with custom payload</div>
+              </div>
+            </div>
+            <div class="palette-item" draggable="true" data-type="webhook_trigger">
+              <div class="w-6 h-6 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-webhooks-logo"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">Inbound Webhook</div>
+                <div class="text-[10px] text-slate-400">Trigger via external HTTP POST</div>
+              </div>
+            </div>
+            <div class="palette-item" draggable="true" data-type="cron_trigger">
+              <div class="w-6 h-6 rounded bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-clock"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">Schedule / Cron</div>
+                <div class="text-[10px] text-slate-400">Periodic interval or cron expression</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTIONS & CONNECTORS -->
+        <div>
+          <div class="px-2 py-1 text-[11px] font-bold text-emerald-400/90 uppercase tracking-wider flex items-center gap-1">
+            <i class="ph-fill ph-gear"></i> Actions & APIs
+          </div>
+          <div class="space-y-1 mt-1">
+            <div class="palette-item" draggable="true" data-type="http_request">
+              <div class="w-6 h-6 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-globe"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">HTTP / REST Request</div>
+                <div class="text-[10px] text-slate-400">GET/POST API call with retries</div>
+              </div>
+            </div>
+            <div class="palette-item" draggable="true" data-type="data_transform">
+              <div class="w-6 h-6 rounded bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-brackets-curly"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">Data Transform</div>
+                <div class="text-[10px] text-slate-400">JSON mapping, math & expressions</div>
+              </div>
+            </div>
+            <div class="palette-item" draggable="true" data-type="code_execution">
+              <div class="w-6 h-6 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-code"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">Execute Python Code</div>
+                <div class="text-[10px] text-slate-400">Sandboxed scripts & data munging</div>
+              </div>
+            </div>
+            <div class="palette-item" draggable="true" data-type="send_notification">
+              <div class="w-6 h-6 rounded bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-paper-plane-tilt"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">Send Notification</div>
+                <div class="text-[10px] text-slate-400">Slack, Discord, Email dispatch</div>
+              </div>
+            </div>
+            <div class="palette-item" draggable="true" data-type="ai_generate">
+              <div class="w-6 h-6 rounded bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-brain"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">AI Intelligence</div>
+                <div class="text-[10px] text-slate-400">Prompt reasoning & summarizer</div>
+              </div>
+            </div>
+            <div class="palette-item" draggable="true" data-type="delay_sleep">
+              <div class="w-6 h-6 rounded bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-hourglass-medium"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">Delay / Sleep</div>
+                <div class="text-[10px] text-slate-400">Wait interval before proceeding</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LOGIC & CONTROL FLOW -->
+        <div>
+          <div class="px-2 py-1 text-[11px] font-bold text-fuchsia-400/90 uppercase tracking-wider flex items-center gap-1">
+            <i class="ph-fill ph-git-branch"></i> Logic & Control
+          </div>
+          <div class="space-y-1 mt-1">
+            <div class="palette-item" draggable="true" data-type="condition_if_else">
+              <div class="w-6 h-6 rounded bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-split-horizontal"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">If / Else Condition</div>
+                <div class="text-[10px] text-slate-400">True & False path branching</div>
+              </div>
+            </div>
+            <div class="palette-item" draggable="true" data-type="parallel_fork_join">
+              <div class="w-6 h-6 rounded bg-violet-500/20 text-violet-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-arrows-split"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">Parallel Fork & Join</div>
+                <div class="text-[10px] text-slate-400">Concurrent multi-branch execution</div>
+              </div>
+            </div>
+            <div class="palette-item" draggable="true" data-type="sub_workflow_call">
+              <div class="w-6 h-6 rounded bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <i class="ph-bold ph-arrows-in-cardinal"></i>
+              </div>
+              <div>
+                <div class="font-semibold text-slate-200">Sub-Workflow Call</div>
+                <div class="text-[10px] text-slate-400">Invoke another saved workflow</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Info / Help -->
+      <div class="p-3 border-t border-slate-800/80 bg-slate-950/40 text-[11px] text-slate-400 flex items-center justify-between">
+        <span>Drag nodes or click to add</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-300">Space+Drag</kbd>
+      </div>
+    </aside>
+
+    <!-- Center Canvas Area -->
+    <main class="flex-1 relative flex flex-col bg-slate-950 overflow-hidden">
+      
+      <!-- Canvas Viewport -->
+      <div id="canvas-viewport" class="flex-1 w-full h-full relative cursor-crosshair overflow-hidden">
+        
+        <!-- Infinite Grid Background -->
+        <svg id="canvas-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0">
+          <defs>
+            <pattern id="grid-pattern" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="15" cy="15" r="1" fill="#334155" opacity="0.45" />
+            </pattern>
+            <!-- Animated Connection Gradient -->
+            <linearGradient id="edge-gradient-active" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#10b981" />
+              <stop offset="50%" stop-color="#6366f1" />
+              <stop offset="100%" stop-color="#ec4899" />
+            </linearGradient>
+            <!-- Arrow Markers -->
+            <marker id="arrow-default" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b" />
+            </marker>
+            <marker id="arrow-active" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+            </marker>
+            <marker id="arrow-true" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981" />
+            </marker>
+            <marker id="arrow-false" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e" />
+            </marker>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid-pattern)" />
+          
+          <!-- Connection Lines Group (Layer 1) -->
+          <g id="edges-group"></g>
+          
+          <!-- Temporary Active Dragging Connection Line -->
+          <path id="temp-edge" d="" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-dasharray="6,4" class="hidden" />
+        </svg>
+
+        <!-- Nodes Container (Layer 2) -->
+        <div id="nodes-container" class="absolute inset-0 pointer-events-auto z-10 transform-gpu origin-top-left"></div>
+
+        <!-- Floating Canvas Controls -->
+        <div class="absolute bottom-5 left-5 flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-lg p-1.5 shadow-xl backdrop-blur z-20">
+          <button id="btn-zoom-in" class="w-7 h-7 rounded hover:bg-slate-800 text-slate-300 flex items-center justify-center text-sm" title="Zoom In">
+            <i class="ph-bold ph-plus"></i>
+          </button>
+          <span id="label-zoom" class="text-[11px] font-mono font-semibold text-slate-400 px-1.5">100%</span>
+          <button id="btn-zoom-out" class="w-7 h-7 rounded hover:bg-slate-800 text-slate-300 flex items-center justify-center text-sm" title="Zoom Out">
+            <i class="ph-bold ph-minus"></i>
+          </button>
+          <div class="h-4 w-px bg-slate-800"></div>
+          <button id="btn-zoom-reset" class="w-7 h-7 rounded hover:bg-slate-800 text-slate-300 flex items-center justify-center text-sm" title="Reset View & Center">
+            <i class="ph-bold ph-corners-out"></i>
+          </button>
+          <button id="btn-clear-canvas" class="w-7 h-7 rounded hover:bg-rose-950/50 text-rose-400 flex items-center justify-center text-sm" title="Clear Canvas">
+            <i class="ph-bold ph-trash"></i>
+          </button>
+        </div>
+
+        <!-- Canvas Minimap Preview -->
+        <div id="canvas-minimap" class="absolute bottom-5 right-5 w-44 h-28 bg-slate-900/80 border border-slate-800 rounded-lg shadow-xl backdrop-blur overflow-hidden z-20 pointer-events-none hidden md:block">
+          <canvas id="minimap-canvas" class="w-full h-full"></canvas>
+        </div>
+
+      </div>
+
+      <!-- Bottom Execution Log / Trace Panel Drawer -->
+      <div id="execution-drawer" class="border-t border-slate-800/90 bg-slate-900/95 backdrop-blur flex flex-col transition-all duration-300 z-20" style="height: 240px;">
+        
+        <!-- Drawer Header -->
+        <div class="h-10 px-4 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <i class="ph-bold ph-terminal-window text-emerald-400"></i> Execution Trace & Live Step Logs
+            </span>
+            <span id="exec-status-badge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-mono">
+              Ready to run
+            </span>
+            <span id="exec-duration-badge" class="text-[11px] text-slate-400 font-mono"></span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button id="btn-toggle-drawer" class="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs">
+              <i class="ph-bold ph-caret-down text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Drawer Content Tabs & Step Timeline -->
+        <div class="flex-1 flex overflow-hidden">
+          
+          <!-- Steps Timeline List -->
+          <div class="w-1/3 border-r border-slate-800/80 overflow-y-auto p-2 space-y-1.5" id="execution-steps-list">
+            <div class="p-6 text-center text-xs text-slate-500">
+              Click <strong class="text-emerald-400">"Execute Flow"</strong> above to trigger live step-by-step DAG execution.
+            </div>
+          </div>
+
+          <!-- Step Payload JSON Inspector -->
+          <div class="flex-1 flex flex-col overflow-hidden bg-slate-950/80">
+            <div class="px-3 py-1.5 border-b border-slate-800 flex items-center justify-between text-[11px]">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-300" id="selected-step-title">Select a step to inspect payload</span>
+                <span id="selected-step-duration" class="text-slate-400 font-mono"></span>
+              </div>
+              <button id="btn-copy-payload" class="text-slate-400 hover:text-slate-200 flex items-center gap-1">
+                <i class="ph-bold ph-copy"></i> Copy JSON
+              </button>
+            </div>
+            
+            <div class="flex-1 grid grid-cols-2 divide-x divide-slate-800 overflow-hidden">
+              <div class="flex flex-col overflow-hidden">
+                <div class="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase bg-slate-900/50">Input Payload / Config</div>
+                <pre id="step-input-json" class="flex-1 p-3 text-[11px] font-mono text-indigo-300 overflow-auto whitespace-pre-wrap select-text">{}</pre>
+              </div>
+              <div class="flex flex-col overflow-hidden">
+                <div class="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase bg-slate-900/50">Output Result / State</div>
+                <pre id="step-output-json" class="flex-1 p-3 text-[11px] font-mono text-emerald-300 overflow-auto whitespace-pre-wrap select-text">{}</pre>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- Right Sidebar / Node Inspector -->
+    <aside id="sidebar-inspector" class="w-80 border-l border-slate-800/80 bg-slate-900/80 backdrop-blur flex flex-col z-20 shrink-0">
+      <div class="p-3.5 border-b border-slate-800/80 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div id="inspector-node-icon" class="w-6 h-6 rounded bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs">
+            <i class="ph-bold ph-sliders"></i>
+          </div>
+          <div>
+            <div id="inspector-node-title" class="font-bold text-xs text-slate-200">Workflow Inspector</div>
+            <div id="inspector-node-type" class="text-[10px] text-slate-400 font-mono">No node selected</div>
+          </div>
+        </div>
+        <button id="btn-close-inspector" class="text-slate-500 hover:text-slate-300">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+
+      <!-- Inspector Form Fields -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-4" id="inspector-fields">
+        <div class="text-center py-12 text-slate-500 text-xs">
+          <i class="ph-duotone ph-cursor-click text-3xl mb-2 block text-slate-600"></i>
+          Select any node on the canvas to configure parameters, variables, retries, and test individual steps.
+        </div>
+      </div>
+
+      <!-- Node Step Tester Bottom Bar -->
+      <div id="inspector-test-box" class="p-3 border-t border-slate-800 bg-slate-950/60 hidden">
+        <button id="btn-test-single-step" class="w-full py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition">
+          <i class="ph-bold ph-play-circle"></i> Test This Step Alone
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- MODALS -->
+
+  <!-- 1. AI Workflow Generator Modal -->
+  <div id="modal-ai" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-pink-500 flex items-center justify-center text-white">
+            <i class="ph-fill ph-sparkle"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-100">AI Workflow Synthesizer</h3>
+            <p class="text-xs text-slate-400">Describe your automation task in plain English</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1.5">What workflow do you want to build?</label>
+        <textarea id="ai-prompt-input" rows="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="e.g. When a webhook arrives with a new lead, check if lead score >= 75. If true, calculate tier with Python code, send Slack alert, and log to database. If false, send nurture email."></textarea>
+      </div>
+
+      <!-- Prompt Suggestions -->
+      <div class="space-y-1.5">
+        <span class="text-[11px] font-semibold text-slate-400">Quick Prompt Templates:</span>
+        <div class="flex flex-wrap gap-1.5">
+          <button class="btn-prompt-suggestion text-[11px] bg-slate-800 hover:bg-slate-750 text-indigo-300 px-2.5 py-1 rounded border border-slate-700">
+            E-Commerce order fraud check & slack alert
+          </button>
+          <button class="btn-prompt-suggestion text-[11px] bg-slate-800 hover:bg-slate-750 text-indigo-300 px-2.5 py-1 rounded border border-slate-700">
+            Daily API health check with retry & AI diagnosis
+          </button>
+          <button class="btn-prompt-suggestion text-[11px] bg-slate-800 hover:bg-slate-750 text-indigo-300 px-2.5 py-1 rounded border border-slate-700">
+            Webhook lead enrichment and scoring pipeline
+          </button>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button class="btn-close-modal px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Cancel</button>
+        <button id="btn-submit-ai-prompt" class="px-5 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/30">
+          <i class="ph-fill ph-magic-wand"></i> Generate Workflow
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Webhook Inbound Details Modal -->
+  <div id="modal-webhook" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
+            <i class="ph-bold ph-webhooks-logo text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-100">Inbound Webhook Endpoint</h3>
+            <p class="text-xs text-slate-400">Trigger this workflow from GitHub, Stripe, Shopify, or curl</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">Webhook URL</label>
+        <div class="flex gap-2">
+          <input type="text" id="webhook-url-display" readonly class="flex-1 bg-slate-950 border border-slate-800 rounded-md px-3 py-1.5 text-xs text-indigo-300 font-mono select-all" />
+          <button id="btn-copy-webhook-url" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-semibold rounded-md flex items-center gap-1">
+            <i class="ph-bold ph-copy"></i> Copy
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">Test with cURL</label>
+        <pre id="webhook-curl-display" class="bg-slate-950 border border-slate-800 rounded-md p-3 text-[11px] font-mono text-emerald-300 overflow-x-auto whitespace-pre-wrap"></pre>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button class="btn-close-modal px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Workflow Selector & Templates Modal -->
+  <div id="modal-workflows" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between shrink-0">
+        <div>
+          <h3 class="font-bold text-base text-slate-100" id="modal-wf-title">Saved Workflows & Templates</h3>
+          <p class="text-xs text-slate-400">Select an existing workflow or start from a pre-built template</p>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-3" id="modal-workflows-list"></div>
+
+      <div class="flex justify-between items-center pt-3 border-t border-slate-800 shrink-0">
+        <button id="btn-create-blank-wf" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5">
+          <i class="ph-bold ph-plus"></i> Create Blank Workflow
+        </button>
+        <button class="btn-close-modal px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Execute Manual Trigger Payload Modal -->
+  <div id="modal-run-payload" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm">
+            <i class="ph-fill ph-play"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-slate-100">Trigger Workflow Run</h3>
+            <p class="text-xs text-slate-400">Pass custom JSON input payload to trigger</p>
+          </div>
+        </div>
+        <button class="btn-close-modal text-slate-400 hover:text-slate-200">
+          <i class="ph-bold ph-x text-base"></i>
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">Trigger Payload (JSON)</label>
+        <textarea id="run-payload-input" rows="6" class="w-full bg-slate-950 border border-slate-800 rounded-md p-2.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-500"></textarea>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button class="btn-close-modal px-3.5 py-1.5 rounded-md bg-slate-800 text-slate-300 text-xs font-semibold">Cancel</button>
+        <button id="btn-confirm-execute" class="px-4 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/30">
+          <i class="ph-fill ph-play"></i> Start Execution
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed top-4 right-4 z-50 bg-slate-900 border border-slate-700 text-slate-100 text-xs px-4 py-2.5 rounded-lg shadow-2xl flex items-center gap-2 transform translate-y-[-100px] opacity-0 transition-all duration-300">
+    <i id="toast-icon" class="ph-fill ph-check-circle text-emerald-400 text-base"></i>
+    <span id="toast-message">Workflow saved successfully</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
